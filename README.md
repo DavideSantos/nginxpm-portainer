@@ -13,8 +13,11 @@ loro porte direttamente sull'host.
 
 - Docker Engine + Docker Compose plugin sulla VPS.
 - Porte **80** e **443** libere e raggiungibili da internet (traffico HTTP/HTTPS pubblico).
-- Porta **81** raggiungibile (almeno dalla tua rete) per l'admin UI di Nginx Proxy Manager.
-- Porte **9000**/**9443** raggiungibili per la UI di Portainer.
+- Porta **9000**/**9443** raggiungibili per la UI di Portainer.
+- Porta **81** (admin UI di Nginx Proxy Manager) è bindata solo su `127.0.0.1`
+  nel `docker-compose.yml`: non è raggiungibile da internet. Va esposta
+  pubblicamente tramite un Proxy Host **dentro** NPM stesso (vedi sotto), non
+  pubblicando la porta sull'host.
 
 ## Avvio
 
@@ -40,9 +43,18 @@ dell'app e alla sua porta interna, con l'opzione "Docker Network" attiva.
 
 ## Primo accesso
 
-- **Nginx Proxy Manager**: `http://<ip-vps>:81`
-  Credenziali di default: `admin@example.com` / `changeme`.
-  **Vanno cambiate subito al primo login.**
+- **Nginx Proxy Manager**: la prima volta, prima di creare il Proxy Host
+  verso se stesso (vedi sotto), si accede con un tunnel SSH:
+  ```bash
+  ssh -L 8181:localhost:81 utente@ip-vps
+  ```
+  poi apri `http://localhost:8181` sul tuo PC. Alla primissima apertura NPM
+  chiede direttamente di creare l'utente admin (nome, email, password) — non
+  ci sono più credenziali di default da usare.
+  Dopo aver configurato un Proxy Host che espone la UI su un dominio (es.
+  `nginxpm.tuodominio.it`, forward verso `nginx-proxy-manager:81` sulla rete
+  Docker), l'accesso quotidiano è da lì via HTTPS; il tunnel SSH resta come
+  via di emergenza se il proxy si rompe.
 - **Portainer**: `https://<ip-vps>:9443`
   Alla primissima apertura chiede di creare l'utente amministratore.
 
